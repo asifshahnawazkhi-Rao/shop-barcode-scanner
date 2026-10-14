@@ -19,6 +19,7 @@ function detected(text, decoded) {
   el('details').textContent = `${format} detected at ${new Date(now).toLocaleTimeString()}. Stock OUT not saved.`;
   el('status').textContent = 'Barcode detected. Camera remains on for the next scan.';
   el('copy').disabled = false; el('clear').disabled = false;
+  el('handoff').disabled = false;
 }
 async function start() {
   if (busy || running) return;
@@ -70,6 +71,7 @@ el('clear').addEventListener('click', () => {
   el('result').value = ''; lastText = ''; lastTime = 0;
   el('details').textContent = 'Result cleared. No stock transaction was saved.';
   el('copy').disabled = true; el('clear').disabled = true;
+  el('handoff').disabled = true;
 });
 el('copy').addEventListener('click', async () => {
   const value = el('result').value;
@@ -78,3 +80,13 @@ el('copy').addEventListener('click', async () => {
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) void stop(); });
 window.addEventListener('pagehide', () => { if (running) void stop(); });
+el('handoff').addEventListener('click', async () => {
+  const barcode = el('result').value;
+  if (!barcode || busy) return;
+  await stop();
+  if (running) return;
+  const target = new URL('https://script.google.com/macros/s/AKfycbyJNHG9oStWM2afAHE-lDq0R5DqGAhdseGbaqi5UblqGitzu72iZKdCzZxiO3lSrlNf/exec');
+  target.searchParams.set('mode', 'scanner-test');
+  target.searchParams.set('barcode', barcode);
+  window.location.assign(target.href);
+});
