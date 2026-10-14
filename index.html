@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Shop Barcode Scanner · Scan only</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+" crossorigin="anonymous"></script>
+  <script defer src="scanner.js"></script>
+</head>
+<body>
+<main>
+  <header><span class="badge">CAMERA TEST · SCAN ONLY</span><h1>Shop barcode scanner</h1><p>Point your camera at a product barcode to read its number.</p></header>
+  <aside class="notice"><strong>Stock OUT not saved</strong><p>This prototype only detects and displays barcodes. It does not connect to Google Sheets or change inventory.</p></aside>
+  <section class="card" aria-labelledby="camera-heading">
+    <h2 id="camera-heading">1. Scan a barcode</h2>
+    <label for="camera">Camera</label><select id="camera"><option value="">Rear camera (automatic)</option></select>
+    <div id="reader"></div>
+    <div class="controls"><button id="start">Start camera</button><button id="stop" class="secondary" disabled>Stop camera</button></div>
+    <p id="status" role="status" aria-live="polite">Camera is off. Tap Start camera and allow camera access.</p>
+    <p class="hint">Keep the entire barcode in view, hold steady, and use good lighting. Supports EAN, UPC, Code 128, Code 39 and ITF.</p>
+  </section>
+  <section class="card" aria-labelledby="result-heading">
+    <h2 id="result-heading">2. Read the result</h2>
+    <label for="result">Last detected barcode</label><input id="result" readonly placeholder="No barcode detected yet" autocomplete="off" spellcheck="false">
+    <p id="details" aria-live="polite">Waiting for a camera scan.</p>
+    <div class="controls"><button id="copy" class="secondary" disabled>Copy barcode</button><button id="clear" class="secondary" disabled>Clear result</button></div>
+    <p class="save-state">Detection ≠ Stock OUT saving. No stock transaction has been saved.</p>
+  </section>
+  <details class="card"><summary>Camera help &amp; privacy</summary><p>Open this HTTPS page directly in Chrome on Android or Safari on iPhone. Avoid an embedded chat browser. If permission is blocked, enable camera access in your browser’s site settings, then retry.</p><p>Choose another camera after the first permission request if needed. Stop the camera before switching. The camera stops when you leave this tab.</p><p>Camera images and barcode results are processed in your browser. Results stay only in this page’s memory. The decoder library is loaded from jsDelivr; no images or barcode results are uploaded.</p></details>
+  <footer>Prototype v1 · Scan and display only</footer>
+</main>
+</body>
+</html>
+
