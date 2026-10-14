@@ -7,7 +7,7 @@
   <title>Shop Barcode Scanner · Scan only</title>
   <link rel="stylesheet" href="styles.css">
   <script defer src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+" crossorigin="anonymous"></script>
-  <script defer src="scanner.js"></script>
+  <script defer src="scanner.js?v=2"></script>
 </head>
 <body>
 <main>
@@ -30,9 +30,11 @@
     <button id="handoff" disabled>Review Stock OUT in test copy</button>
     <p class="hint">Opens the owner-only Google app with this barcode. Review the item and quantity there, then confirm. This scanner does not save inventory.</p>
   </section>
-  <details class="card"><summary>Camera help &amp; privacy</summary><p>Open this HTTPS page directly in Chrome on Android or Safari on iPhone. Avoid an embedded chat browser. If permission is blocked, enable camera access in your browser’s site settings, then retry.</p><p>Choose another camera after the first permission request if needed. Stop the camera before switching. The camera stops when you leave this tab.</p><p>Camera images and barcode results are processed in your browser. Results stay only in this page’s memory. The decoder library is loaded from jsDelivr; no images or barcode results are uploaded.</p></details>
+  <details class="card"><summary>Camera help &amp; privacy</summary><p>Open this HTTPS page directly in Chrome on Android or Safari on iPhone. Avoid an embedded chat browser. If permission is blocked, enable camera access in your browser’s site settings, then retry.</p><p>Choose another camera after the first permission request if needed. Stop the camera before switching. The camera stops when you leave this tab.</p><p>Camera images and barcode results are processed in your browser. Results stay only in this page’s memory. The decoder library is loaded from jsDelivr. Camera images are not uploaded. The Review button sends only the displayed barcode to the owner-only Google test app for your confirmation.</p></details>
   <footer>Prototype v1 · Scan and display only</footer>
 </main>
 </body>
 </html>
+
+
 
