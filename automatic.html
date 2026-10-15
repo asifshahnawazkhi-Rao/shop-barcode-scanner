@@ -1,0 +1,83 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Automatic Stock OUT · Test copy</title><link rel="stylesheet" href="styles.css"><script defer src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+" crossorigin="anonymous"></script></head><body><main>
+<span class="badge">AUTOMATIC · TEST COPY ONLY</span><h1>Scan → 1 unit OUT</h1><aside class="notice">Every accepted scan saves one unit automatically. No item confirmation screen. Keep the connected Google tab open.</aside>
+<section class="card"><button id="connect">Connect Google test inventory</button><p id="connection" role="status">Not connected. Nothing will be saved.</p><button id="start" disabled>Start automatic camera</button><button id="stop" class="secondary" disabled>Stop camera</button><div id="reader"></div><p id="status" role="status">Connect first, then start scanning.</p><p>For the same barcode again, remove it from the camera for at least 2 seconds, then show it again. Wait for the saved message before the next item.</p></section>
+<section class="card"><h2>Last transaction</h2><p id="result" style="white-space:pre-line">No automatic transaction yet.</p><button id="retry" hidden>Check / retry the same request</button><p id="request" class="hint"></p></section>
+<section class="card"><label for="manual">Bluetooth / USB scanner (Enter to save 1 unit)</label><input id="manual" autocomplete="off" disabled placeholder="Scan barcode and press Enter"></section>
+<p class="hint">Google sign-in stays in the Google tab. No PIN or Google token is stored in public code. Camera images stay on this device. Accepted barcodes are sent only to the connected Google test app.</p><a href="index.html">Scan-only / review mode</a>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const GOOGLE_ORIGIN='https://n-sehpvs6v2eya67voc2d4aq5ezznw6crqdcqmcmq-0lu-script.googleusercontent.com';
+const ENDPOINT='https://script.google.com/macros/s/AKfycbyJNHG9oStWM2afAHE-lDq0R5DqGAhdseGbaqi5UblqGitzu72iZKdCzZxiO3lSrlNf/exec';
+let popup=null,peer=null,nonce='',connected=false,scanner=null,running=false,starting=false;
+let pending=null,timer=null,lastCode='',lastSeen=0,misses=0,armed=true,paused=false;
+try{pending=JSON.parse(sessionStorage.getItem('shop-auto-pending')||'null');if(pending&&(!pending.requestId||!pending.barcode))pending=null;}catch{}
+function controls(){
+ $('start').disabled=!connected||running||starting||!!pending;
+ $('stop').disabled=!running||starting;
+ $('manual').disabled=!connected||!!pending||paused;
+ $('retry').hidden=!pending; $('retry').disabled=!connected;
+ $('request').textContent=pending?'Unconfirmed request: '+pending.requestId:'';
+}
+function remember(){if(pending)sessionStorage.setItem('shop-auto-pending',JSON.stringify(pending));else sessionStorage.removeItem('shop-auto-pending');controls();}
+function tell(type,extra={}){if(peer)peer.postMessage({app:'shop-stock-out-v1',nonce,type,...extra},GOOGLE_ORIGIN);}
+$('connect').onclick=()=>{
+ if(running){$('status').textContent='Stop the camera before reconnecting.';return;}
+ connected=false;peer=null;nonce=crypto.randomUUID();controls();
+ const url=new URL(ENDPOINT);url.searchParams.set('mode','scanner-test');url.searchParams.set('automatic','1');url.searchParams.set('channel',nonce);
+ popup=window.open(url.href,'shop-inventory-connection','popup,width=550,height=700');
+ $('connection').textContent=popup?'Sign in in the Google tab, then return here.':'Popup blocked. Allow popups for this scanner and reconnect.';
+};
+window.addEventListener('message',event=>{
+ const m=event.data;if(event.origin!==GOOGLE_ORIGIN||!m||m.app!=='shop-stock-out-v1'||m.nonce!==nonce||!event.source)return;
+ if(m.type==='ready'){
+  try{if(event.source.top!==popup)return;}catch{return;}
+  if(peer&&peer!==event.source)return;
+  peer=event.source;connected=true;$('connection').textContent='Connected to owner-only TEST inventory.';tell('connected');controls();return;
+ }
+ if(event.source!==peer||!pending||m.requestId!==pending.requestId)return;
+ clearTimeout(timer);
+ if(m.type==='result'){
+  const r=m.result;
+  if(!r||r.success!==true||r.testOnly!==true||r.requestId!==pending.requestId||r.barcode!==pending.barcode||r.quantity!==1){uncertain('Invalid save acknowledgement.');return;}
+  pending=null;paused=false;remember();
+  $('result').textContent='Stock OUT saved — TEST COPY ONLY\n'+r.product+'\nBarcode: '+r.barcode+'\nOUT: 1 unit\nRemaining: '+r.balance+'\nTransaction: '+r.requestId;
+  $('status').textContent='Saved. Ready for the next item. Remove the same barcode for 2 seconds before scanning it again.';
+ }else if(m.type==='error'){uncertain(m.message||'Save not confirmed.');}
+});
+function uncertain(message){paused=true;$('status').textContent='SCANNING PAUSED — save status not confirmed. '+message;$('result').textContent='Do not start a new request for this item. Use Check / retry the same request. Keep this page open.';controls();}
+function submit(barcode){
+ if(!connected||pending||paused)return;
+ pending={barcode:String(barcode).trim(),requestId:crypto.randomUUID()};if(!pending.barcode){pending=null;return;}
+ remember();sendPending();
+}
+function sendPending(){
+ if(!pending||!connected)return;
+ $('status').textContent='Saving 1 unit: '+pending.barcode+'…';tell('save',pending);clearTimeout(timer);timer=setTimeout(()=>uncertain('No acknowledgement within 30 seconds.'),30000);controls();
+}
+$('retry').onclick=sendPending;
+function onCode(code){
+ const now=Date.now();const same=code===lastCode;
+ if(same){lastSeen=now;misses=0;if(!armed)return;}
+ if(!connected||pending||paused)return;
+ lastCode=code;lastSeen=now;misses=0;armed=false;
+ submit(code);
+}
+function onMiss(){misses++;if(misses>=10&&Date.now()-lastSeen>=2000)armed=true;}
+$('start').onclick=async()=>{
+ if(!connected||pending||running||starting)return;
+ if(typeof Html5Qrcode==='undefined'){$('status').textContent='Camera decoder did not load. Reload and retry.';return;}
+ starting=true;controls();
+ try{
+  scanner=scanner||new Html5Qrcode('reader',{formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.ITF]});
+  await scanner.start({facingMode:'environment'},{fps:10},onCode,onMiss);running=true;paused=false;$('status').textContent='AUTOMATIC MODE ON. Each accepted scan saves one test unit.';
+ }catch(e){$('status').textContent='Camera unavailable. Allow camera access and retry, or use a Bluetooth scanner.';}
+ finally{starting=false;controls();if(document.hidden&&running)await stopCamera();}
+};
+async function stopCamera(){if(!running||starting)return;try{await scanner.stop();running=false;$('status').textContent=pending?'Camera stopped. A save is still unconfirmed.':'Camera stopped. Automatic camera saving is off.';}catch{$('status').textContent='Could not stop camera. Close this tab to release it.';}controls();}
+$('stop').onclick=stopCamera;
+$('manual').onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();const code=$('manual').value.trim();$('manual').value='';submit(code);}};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)void stopCamera();});
+if(pending){paused=true;$('status').textContent='Previous save unconfirmed. Connect Google, then check the same request before scanning.';}
+controls();
+</script></main></body></html>
